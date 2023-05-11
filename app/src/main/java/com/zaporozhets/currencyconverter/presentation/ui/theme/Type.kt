@@ -1,4 +1,4 @@
-package com.zaporozhets.currencyconverter.presentation.theme
+package com.zaporozhets.currencyconverter.presentation.ui.theme
 
 import androidx.compose.material.Typography
 import androidx.compose.ui.text.TextStyle

@@ -1,84 +1,102 @@
 package com.zaporozhets.currencyconverter.presentation.currencyconverter
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
+import androidx.compose.material.Button
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.OutlinedTextField
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.zaporozhets.currencyconverter.R
+import com.zaporozhets.currencyconverter.domain.model.ConversionResult
+import com.zaporozhets.currencyconverter.presentation.currencyconverter.components.DropdownMenuCurrencySelector
 import com.zaporozhets.currencyconverter.utils.currencies
 
 
 @Composable
-fun CurrencyConverterScreen() {
-    Column(modifier = Modifier.padding(16.dp)) {
-        val amount = remember { mutableStateOf("") }
+fun CurrencyConverterScreen(currencyViewModel: CurrencyConverterViewModel = viewModel()) {
 
-        val baseCurrency = remember {
-            mutableStateOf(currencies[0])
-        }
-        val targetCurrency = remember {
-            mutableStateOf(currencies[1])
-        }
-        val conversionResult = remember {
-            mutableStateOf("Converted amount will be displayed here")
-        }
+    val conversionResult by currencyViewModel.conversionResult
+    val amount = remember { mutableStateOf("") }
+    val amountError = remember { mutableStateOf<String?>(null) }
+    val baseCurrency = remember { mutableStateOf(currencies[0]) }
+    val targetCurrency = remember { mutableStateOf(currencies[1]) }
+
+    Column(modifier = Modifier.padding(16.dp)) {
 
         OutlinedTextField(
             value = amount.value,
-            onValueChange = { amount.value = it },
-            label = { Text("Amount") }
+            onValueChange = {
+                amount.value = it
+                amountError.value = null
+            },
+            label = { Text(stringResource(R.string.amount)) },
+            isError = amountError.value != null
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        amountError.value?.let {
+            Text(
+                text = it,
+                color = MaterialTheme.colors.error,
+                style = MaterialTheme.typography.caption,
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Row {
 
-            DropdownMenuCurrencySelector(selectedCurrency = baseCurrency, label = "Base currency")
+            DropdownMenuCurrencySelector(selectedCurrency = baseCurrency,
+                label = stringResource(R.string.base_currency))
             Spacer(modifier = Modifier.width(16.dp))
             DropdownMenuCurrencySelector(selectedCurrency = targetCurrency,
-                label = "Target currency")
+                label = stringResource(R.string.target_currency))
 
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(text = conversionResult.value)
+        Button(onClick = {
+            val amountValue = amount.value.toDoubleOrNull()
+            if (amountValue != null && amountValue > 0) {
+                currencyViewModel.convertCurrency(
+                    amountValue,
+                    baseCurrency.value,
+                    targetCurrency.value
+                )
+            } else {
+                amountError.value = "Invalid Amount"
+            }
+        }) {
+            Text(stringResource(R.string.convert))
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(onClick = {}) {
-            Text("Convert")
-        }
+        ConversionResultDisplay(conversionResult = conversionResult)
 
     }
 }
 
 @Composable
-fun DropdownMenuCurrencySelector(selectedCurrency: MutableState<String>, label: String) {
-    val expanded = remember {
-        mutableStateOf(false)
-    }
-
-    Column {
-        Text(text = label)
-        Button(onClick = { expanded.value = !expanded.value }) {
-            Text(text = selectedCurrency.value)
+fun ConversionResultDisplay(conversionResult: ConversionResult) {
+    when (conversionResult) {
+        is ConversionResult.Error -> {
+            Text(text = "Error: ${conversionResult.message}")
         }
-        DropdownMenu(
-            expanded = expanded.value,
-            onDismissRequest = { expanded.value = false }
-        ) {
-            currencies.forEach { currency ->
-                DropdownMenuItem(onClick = {
-                    selectedCurrency.value = currency
-                    expanded.value = false
-                }) {
-                    Text(text = currency)
-                }
-            }
+        ConversionResult.NoData -> {
+            Text(text = "No conversion data available")
+        }
+        is ConversionResult.Success -> {
+            Text(text = "Conversion result: ${conversionResult.value}")
         }
     }
 }

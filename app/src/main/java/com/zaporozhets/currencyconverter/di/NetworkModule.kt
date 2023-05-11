@@ -2,6 +2,8 @@ package com.zaporozhets.currencyconverter.di
 
 import com.zaporozhets.currencyconverter.BuildConfig
 import com.zaporozhets.currencyconverter.data.remote.api.ExchangeRatesApi
+import com.zaporozhets.currencyconverter.data.repository.CurrencyRepository
+import com.zaporozhets.currencyconverter.data.repository.CurrencyRepositoryImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -70,4 +72,10 @@ object NetworkModule {
     @Singleton
     @Provides
     fun provideGsonConverterFactory(): GsonConverterFactory = GsonConverterFactory.create()
+
+    @Singleton
+    @Provides
+    fun provideCurrencyRepository(exchangeRatesApi: ExchangeRatesApi) : CurrencyRepository {
+        return CurrencyRepositoryImpl(exchangeRatesApi)
+    }
 }
