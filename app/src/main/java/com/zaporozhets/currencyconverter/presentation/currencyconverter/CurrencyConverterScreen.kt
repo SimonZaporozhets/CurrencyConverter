@@ -5,10 +5,7 @@ import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -27,6 +24,22 @@ fun CurrencyConverterScreen(currencyViewModel: CurrencyConverterViewModel = view
     val amountError = remember { mutableStateOf<String?>(null) }
     val baseCurrency = remember { mutableStateOf(currencies[0]) }
     val targetCurrency = remember { mutableStateOf(currencies[1]) }
+
+    fun convertCurrency() {
+        val amountValue = amount.value.toDoubleOrNull()
+        if (amountValue != null && amountValue > 0) {
+            currencyViewModel.convertCurrency(
+                amountValue,
+                baseCurrency.value,
+                targetCurrency.value
+            )
+            amountError.value = null
+        } else {
+            amountError.value = "Invalid Amount"
+        }
+    }
+
+    val isOnline by currencyViewModel.isOnline.collectAsState()
 
     Column(modifier = Modifier.padding(16.dp)) {
 
@@ -64,36 +77,38 @@ fun CurrencyConverterScreen(currencyViewModel: CurrencyConverterViewModel = view
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(onClick = {
-            val amountValue = amount.value.toDoubleOrNull()
-            if (amountValue != null && amountValue > 0) {
-                currencyViewModel.convertCurrency(
-                    amountValue,
-                    baseCurrency.value,
-                    targetCurrency.value
-                )
-            } else {
-                amountError.value = "Invalid Amount"
-            }
-        }) {
+        Button(onClick = { convertCurrency() }) {
             Text(stringResource(R.string.convert))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        ConversionResultDisplay(conversionResult = conversionResult)
+        ConversionResultDisplay(conversionResult = conversionResult, isOnline, onRetry = { convertCurrency() })
 
     }
 }
 
 @Composable
-fun ConversionResultDisplay(conversionResult: ConversionResult) {
+fun ConversionResultDisplay(
+    conversionResult: ConversionResult,
+    isOnline: Boolean,
+    onRetry: () -> Unit,
+) {
     when (conversionResult) {
         is ConversionResult.Error -> {
             Text(text = "Error: ${conversionResult.message}")
         }
         ConversionResult.NoData -> {
-            Text(text = "No conversion data available")
+            if (isOnline) {
+                Column {
+                    Text(text = "No conversion data available")
+                    Button(onClick = onRetry) {
+                        Text(text = "Retry")
+                    }
+                }
+            } else {
+                Text(text = "You are not connected to the internet. Please check your connection and retry")
+            }
         }
         is ConversionResult.Success -> {
             Text(text = "Conversion result: ${conversionResult.value}")
