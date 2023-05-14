@@ -83,7 +83,11 @@ fun CurrencyConverterScreen(currencyViewModel: CurrencyConverterViewModel = view
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        ConversionResultDisplay(conversionResult = conversionResult, isOnline, onRetry = { convertCurrency() })
+        ConversionResultDisplay(
+            conversionResult = conversionResult,
+            isOnline,
+            onRetry = { convertCurrency() }
+        )
 
     }
 }
