@@ -8,9 +8,11 @@ import com.zaporozhets.currencyconverter.domain.model.ConversionResult
 import com.zaporozhets.currencyconverter.domain.usecase.ConvertCurrencyUseCase
 import com.zaporozhets.currencyconverter.utils.ConnectivityChecker
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import javax.inject.Inject
@@ -38,12 +40,15 @@ class CurrencyConverterViewModel @Inject constructor(
     fun convertCurrency(amount: Double, baseCurrency: String, targetCurrency: String) {
         viewModelScope.launch {
             if (_isOnline.value) {
+                _conversionResult.value = ConversionResult.Loading
                 try {
-                    val result = convertCurrencyUseCase.execute(
-                        baseCurrency,
-                        targetCurrency,
-                        amount,
-                    )
+                    val result = withContext(Dispatchers.IO) {
+                        convertCurrencyUseCase.execute(
+                            baseCurrency,
+                            targetCurrency,
+                            amount,
+                        )
+                    }
                     _conversionResult.value = ConversionResult.Success(result)
                 } catch (e: Exception) {
                     when (e) {

@@ -1,6 +1,7 @@
 package com.zaporozhets.currencyconverter.di
 
 import com.zaporozhets.currencyconverter.BuildConfig
+import com.zaporozhets.currencyconverter.data.local.dao.ConversionRatesDao
 import com.zaporozhets.currencyconverter.data.remote.api.ExchangeRatesApi
 import com.zaporozhets.currencyconverter.data.repository.CurrencyRepository
 import com.zaporozhets.currencyconverter.data.repository.CurrencyRepositoryImpl
@@ -75,7 +76,10 @@ object NetworkModule {
 
     @Singleton
     @Provides
-    fun provideCurrencyRepository(exchangeRatesApi: ExchangeRatesApi) : CurrencyRepository {
-        return CurrencyRepositoryImpl(exchangeRatesApi)
+    fun provideCurrencyRepository(
+        exchangeRatesApi: ExchangeRatesApi,
+        conversionRatesDao: ConversionRatesDao,
+    ): CurrencyRepository {
+        return CurrencyRepositoryImpl(exchangeRatesApi, conversionRatesDao)
     }
 }

@@ -1,10 +1,7 @@
 package com.zaporozhets.currencyconverter.presentation.currencyconverter
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -116,6 +113,9 @@ fun ConversionResultDisplay(
         }
         is ConversionResult.Success -> {
             Text(text = "Conversion result: ${conversionResult.value}")
+        }
+        ConversionResult.Loading -> {
+            CircularProgressIndicator()
         }
     }
 }
