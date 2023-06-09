@@ -14,14 +14,14 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private const val API_BASE_URL = "http://api.apilayer.com/exchangerates_data"
-    private const val API_KEY_QUERY_PARAM = "access_key"
+    private const val API_BASE_URL = "https://api.apilayer.com/exchangerates_data/"
 
     @Singleton
     @Provides
@@ -44,6 +44,8 @@ object NetworkModule {
         httpLoggingInterceptor: HttpLoggingInterceptor,
     ): OkHttpClient {
         return OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)  // connect timeout
+            .readTimeout(30, TimeUnit.SECONDS)     // socket timeout
             .addInterceptor(apiKeyInterceptor)
             .addInterceptor(httpLoggingInterceptor)
             .build()
@@ -53,11 +55,10 @@ object NetworkModule {
     @Provides
     fun provideApiKeyInterceptor(): Interceptor {
         return Interceptor { chain ->
-            val request = chain.request()
-            val url = request.url.newBuilder()
-                .addQueryParameter(API_KEY_QUERY_PARAM, BuildConfig.API_KEY)
+            val originalRequest = chain.request()
+            val newRequest = originalRequest.newBuilder()
+                .header("apikey", BuildConfig.API_KEY)  // replace <Your Api Key> with your actual API key
                 .build()
-            val newRequest = request.newBuilder().url(url).build()
             chain.proceed(newRequest)
         }
     }
@@ -66,7 +67,7 @@ object NetworkModule {
     @Provides
     fun provideHttpLoggingInterceptor(): HttpLoggingInterceptor {
         return HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BASIC
+            level = HttpLoggingInterceptor.Level.BODY
         }
     }
 

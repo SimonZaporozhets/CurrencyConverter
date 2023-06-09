@@ -6,7 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.zaporozhets.currencyconverter.R
 import com.zaporozhets.currencyconverter.domain.model.ConversionResult
 import com.zaporozhets.currencyconverter.presentation.currencyconverter.components.DropdownMenuCurrencySelector
@@ -14,9 +14,7 @@ import com.zaporozhets.currencyconverter.utils.currencies
 
 
 @Composable
-fun CurrencyConverterScreen() {
-
-    val currencyViewModel = viewModel<CurrencyConverterViewModel>()
+fun CurrencyConverterScreen(currencyViewModel: CurrencyConverterViewModel = hiltViewModel()) {
 
     val conversionResult by currencyViewModel.conversionResult
     val amount = remember { mutableStateOf("") }
