@@ -14,7 +14,9 @@ import com.zaporozhets.currencyconverter.utils.currencies
 
 
 @Composable
-fun CurrencyConverterScreen(currencyViewModel: CurrencyConverterViewModel = viewModel()) {
+fun CurrencyConverterScreen() {
+
+    val currencyViewModel = viewModel<CurrencyConverterViewModel>()
 
     val conversionResult by currencyViewModel.conversionResult
     val amount = remember { mutableStateOf("") }
