@@ -3,6 +3,7 @@ package com.zaporozhets.currencyconverter.di
 import android.content.Context
 import com.zaporozhets.currencyconverter.data.repository.CurrencyRepository
 import com.zaporozhets.currencyconverter.domain.usecase.ConvertCurrencyUseCase
+import com.zaporozhets.currencyconverter.domain.usecase.GetAllCurrenciesUseCase
 import com.zaporozhets.currencyconverter.utils.ConnectivityChecker
 import dagger.Module
 import dagger.Provides
@@ -20,6 +21,12 @@ object AppModule {
     @Provides
     fun provideConvertCurrencyUseCase(currencyRepository: CurrencyRepository): ConvertCurrencyUseCase {
         return ConvertCurrencyUseCase(currencyRepository)
+    }
+
+    @Singleton
+    @Provides
+    fun provideGetAllCurrenciesUseCase(currencyRepository: CurrencyRepository): GetAllCurrenciesUseCase {
+        return GetAllCurrenciesUseCase(currencyRepository)
     }
 
     @Singleton

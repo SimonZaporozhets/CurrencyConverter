@@ -34,7 +34,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.zaporozhets.currencyconverter.R
 import com.zaporozhets.currencyconverter.domain.model.ConversionResult
 import com.zaporozhets.currencyconverter.presentation.currencyconverter.components.DropdownMenuCurrencySelector
-import com.zaporozhets.currencyconverter.utils.currencies
 
 
 @Composable
@@ -45,10 +44,11 @@ fun CurrencyConverterScreen(currencyViewModel: CurrencyConverterViewModel = hilt
         Box(modifier = Modifier.padding(paddingValues)) {
 
             val conversionResult by currencyViewModel.conversionResult
+            val currencies = currencyViewModel.currenciesList
             val amount = remember { mutableStateOf("") }
             val amountError = remember { mutableStateOf<String?>(null) }
-            val baseCurrency = remember { mutableStateOf(currencies[0]) }
-            val targetCurrency = remember { mutableStateOf(currencies[1]) }
+            val baseCurrency = remember { mutableStateOf("USD") }
+            val targetCurrency = remember { mutableStateOf("EUR") }
 
             fun convertCurrency() {
                 val amountValue = amount.value.toDoubleOrNull()
@@ -103,12 +103,14 @@ fun CurrencyConverterScreen(currencyViewModel: CurrencyConverterViewModel = hilt
 
                             DropdownMenuCurrencySelector(
                                 selectedCurrency = baseCurrency,
-                                label = stringResource(R.string.base_currency)
+                                label = stringResource(R.string.base_currency),
+                                currencies
                             )
                             Spacer(modifier = Modifier.width(16.dp))
                             DropdownMenuCurrencySelector(
                                 selectedCurrency = targetCurrency,
-                                label = stringResource(R.string.target_currency)
+                                label = stringResource(R.string.target_currency),
+                                currencies
                             )
 
                         }
@@ -178,7 +180,6 @@ fun ConversionResultDisplay(
                         textAlign = TextAlign.Center
                     )
                 }
-
 
                 is ConversionResult.Success -> {
                     Text(

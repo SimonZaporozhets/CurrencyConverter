@@ -16,10 +16,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.zaporozhets.currencyconverter.utils.currencies
 
 @Composable
-fun DropdownMenuCurrencySelector(selectedCurrency: MutableState<String>, label: String) {
+fun DropdownMenuCurrencySelector(
+    selectedCurrency: MutableState<String>,
+    label: String,
+    currencies: List<String>,
+) {
     val expanded = remember {
         mutableStateOf(false)
     }

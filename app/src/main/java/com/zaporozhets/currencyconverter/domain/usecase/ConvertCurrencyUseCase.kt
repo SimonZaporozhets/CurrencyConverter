@@ -10,8 +10,6 @@ class ConvertCurrencyUseCase(
         targetCurrency: String,
         amount: Double,
     ): Double {
-        val exchangeRatesApi = currencyRepository.getCurrencyConversionRates(baseCurrency)
-        val rate = exchangeRatesApi.rates[targetCurrency] ?: 0.0
-        return amount * rate
+        return currencyRepository.convertCurrency(amount, baseCurrency, targetCurrency)
     }
 }
