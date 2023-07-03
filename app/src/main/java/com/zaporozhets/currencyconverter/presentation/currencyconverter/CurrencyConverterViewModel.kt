@@ -55,7 +55,7 @@ class CurrencyConverterViewModel @Inject constructor(
                 when (e) {
                     is SocketTimeoutException, is UnknownHostException ->
                         _uiState.value =
-                            UiState.Error("Network error occurred")
+                            UiState.Error("Network error occurred!")
 
                     else ->
                         _uiState.value =
