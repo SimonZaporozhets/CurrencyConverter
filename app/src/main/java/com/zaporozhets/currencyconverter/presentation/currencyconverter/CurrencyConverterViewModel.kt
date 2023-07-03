@@ -5,7 +5,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.zaporozhets.currencyconverter.domain.model.ConversionResult
+import com.zaporozhets.currencyconverter.domain.model.UiState
 import com.zaporozhets.currencyconverter.domain.usecase.ConvertCurrencyUseCase
 import com.zaporozhets.currencyconverter.domain.usecase.GetAllCurrenciesUseCase
 import com.zaporozhets.currencyconverter.utils.ConnectivityChecker
@@ -26,8 +26,8 @@ class CurrencyConverterViewModel @Inject constructor(
     private val connectivityChecker: ConnectivityChecker,
 ) : ViewModel() {
 
-    private val _conversionResult = mutableStateOf<ConversionResult>(ConversionResult.NoData)
-    val conversionResult: State<ConversionResult> = _conversionResult
+    private val _uiState = mutableStateOf<UiState>(UiState.NoData)
+    val uiState: State<UiState> = _uiState
 
     private var _currenciesList = mutableStateListOf<String>()
     val currenciesList: List<String> = _currenciesList
@@ -46,17 +46,20 @@ class CurrencyConverterViewModel @Inject constructor(
 
     private fun getAllCurrencies() {
         viewModelScope.launch {
+            _uiState.value = UiState.Loading
             try {
+                _currenciesList.clear()
                 _currenciesList.addAll(getAllCurrenciesUseCase.execute())
+                _uiState.value = UiState.NoData
             } catch (e: Exception) {
                 when (e) {
                     is SocketTimeoutException, is UnknownHostException ->
-                        _conversionResult.value =
-                            ConversionResult.Error("Network error occurred")
+                        _uiState.value =
+                            UiState.Error("Network error occurred")
 
                     else ->
-                        _conversionResult.value =
-                            ConversionResult.Error(e.message ?: "Unknown error")
+                        _uiState.value =
+                            UiState.Error(e.message ?: "Unknown error")
                 }
             }
         }
@@ -64,7 +67,7 @@ class CurrencyConverterViewModel @Inject constructor(
 
     fun convertCurrency(amount: Double, baseCurrency: String, targetCurrency: String) {
         viewModelScope.launch {
-            _conversionResult.value = ConversionResult.Loading
+            _uiState.value = UiState.Loading
             try {
                 val result = withContext(Dispatchers.IO) {
                     convertCurrencyUseCase.execute(
@@ -73,16 +76,16 @@ class CurrencyConverterViewModel @Inject constructor(
                         amount,
                     )
                 }
-                _conversionResult.value = ConversionResult.Success(result)
+                _uiState.value = UiState.ConversionSuccess(result)
             } catch (e: Exception) {
                 when (e) {
                     is SocketTimeoutException, is UnknownHostException ->
-                        _conversionResult.value =
-                            ConversionResult.Error("Network error occurred")
+                        _uiState.value =
+                            UiState.Error("Network error occurred")
 
                     else ->
-                        _conversionResult.value =
-                            ConversionResult.Error(e.message ?: "Unknown error")
+                        _uiState.value =
+                            UiState.Error(e.message ?: "Unknown error")
                 }
             }
 

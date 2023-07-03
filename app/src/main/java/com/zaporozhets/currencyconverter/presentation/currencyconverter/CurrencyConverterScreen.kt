@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -32,7 +33,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.zaporozhets.currencyconverter.R
-import com.zaporozhets.currencyconverter.domain.model.ConversionResult
+import com.zaporozhets.currencyconverter.domain.model.UiState
 import com.zaporozhets.currencyconverter.presentation.currencyconverter.components.DropdownMenuCurrencySelector
 
 
@@ -41,9 +42,14 @@ fun CurrencyConverterScreen(currencyViewModel: CurrencyConverterViewModel = hilt
     Scaffold(topBar = {
         TopAppBar(title = { Text(text = "Currency Converter") })
     }, content = { paddingValues ->
-        Box(modifier = Modifier.padding(paddingValues)) {
+        Box(
+            modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxWidth()
+                .fillMaxHeight()
+        ) {
 
-            val conversionResult by currencyViewModel.conversionResult
+            val conversionResult by currencyViewModel.uiState
             val currencies = currencyViewModel.currenciesList
             val amount = remember { mutableStateOf("") }
             val amountError = remember { mutableStateOf<String?>(null) }
@@ -60,6 +66,10 @@ fun CurrencyConverterScreen(currencyViewModel: CurrencyConverterViewModel = hilt
                 } else {
                     amountError.value = "Invalid Amount"
                 }
+            }
+
+            if (conversionResult == UiState.Loading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
 
             Column {
@@ -134,7 +144,7 @@ fun CurrencyConverterScreen(currencyViewModel: CurrencyConverterViewModel = hilt
                     Spacer(modifier = Modifier.height(16.dp))
 
                     ConversionResultDisplay(
-                        conversionResult = conversionResult,
+                        uiState = conversionResult,
                         onRetry = { convertCurrency() },
                     )
                 }
@@ -147,7 +157,7 @@ fun CurrencyConverterScreen(currencyViewModel: CurrencyConverterViewModel = hilt
 
 @Composable
 fun ConversionResultDisplay(
-    conversionResult: ConversionResult,
+    uiState: UiState,
     onRetry: () -> Unit,
 ) {
 
@@ -163,10 +173,10 @@ fun ConversionResultDisplay(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            when (conversionResult) {
-                is ConversionResult.Error -> {
+            when (uiState) {
+                is UiState.Error -> {
                     Text(
-                        text = "Error: ${conversionResult.message}",
+                        text = "Error: ${uiState.message}",
                         textAlign = TextAlign.Center
                     )
                     Button(onClick = onRetry) {
@@ -174,23 +184,20 @@ fun ConversionResultDisplay(
                     }
                 }
 
-                ConversionResult.NoData -> {
+                UiState.NoData -> {
                     Text(
                         text = "No conversion data available. Please enter an amount and select currencies to convert.",
                         textAlign = TextAlign.Center
                     )
                 }
 
-                is ConversionResult.Success -> {
+                is UiState.ConversionSuccess -> {
                     Text(
-                        text = "Conversion result: ${conversionResult.value}",
+                        text = "Conversion result: ${uiState.value}",
                         textAlign = TextAlign.Center
                     )
                 }
-
-                ConversionResult.Loading -> {
-                    CircularProgressIndicator()
-                }
+                else -> {}
             }
         }
     }
