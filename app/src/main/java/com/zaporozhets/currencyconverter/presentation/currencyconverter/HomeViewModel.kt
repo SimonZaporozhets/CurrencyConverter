@@ -2,6 +2,7 @@ package com.zaporozhets.currencyconverter.presentation.currencyconverter
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.zaporozhets.currencyconverter.domain.model.ConvertCurrencyParams
 import com.zaporozhets.currencyconverter.domain.model.UiState
 import com.zaporozhets.currencyconverter.domain.usecase.ConvertCurrencyUseCase
 import com.zaporozhets.currencyconverter.domain.usecase.GetAllCurrenciesUseCase
@@ -57,7 +58,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch(exceptionHandler) {
             state.value.uiState.value = UiState.Loading
             state.value.currencies.clear()
-            state.value.currencies.addAll(getAllCurrenciesUseCase.execute())
+            state.value.currencies.addAll(getAllCurrenciesUseCase.execute(Unit))
             state.value.uiState.value = UiState.NoData
         }
     }
@@ -69,9 +70,11 @@ class HomeViewModel @Inject constructor(
                 state.value.uiState.value = UiState.Loading
                 val result = withContext(Dispatchers.IO) {
                     convertCurrencyUseCase.execute(
-                        state.value.baseCurrency.value,
-                        state.value.targetCurrency.value,
-                        amountValue.toDouble()
+                        ConvertCurrencyParams(
+                            state.value.baseCurrency.value,
+                            state.value.targetCurrency.value,
+                            amountValue.toDouble()
+                        )
                     )
                 }
                 state.value.uiState.value = UiState.ConversionSuccess(result)

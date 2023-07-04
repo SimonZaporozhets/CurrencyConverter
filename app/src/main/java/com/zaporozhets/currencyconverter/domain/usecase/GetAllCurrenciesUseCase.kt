@@ -4,10 +4,8 @@ import com.zaporozhets.currencyconverter.data.repository.CurrencyRepository
 
 class GetAllCurrenciesUseCase(
     private val currencyRepository: CurrencyRepository
-) {
-
-    suspend fun execute(): List<String> {
+) : UseCase<Unit, List<String>> {
+    override suspend fun execute(params: Unit): List<String> {
         return currencyRepository.getAllCurrencies()
     }
-
 }
