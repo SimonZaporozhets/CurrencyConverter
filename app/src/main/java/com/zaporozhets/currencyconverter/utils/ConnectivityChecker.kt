@@ -7,7 +7,7 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
 
-class ConnectivityChecker(private val context: Context) {
+class ConnectivityChecker(context: Context) {
 
     private val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -18,7 +18,8 @@ class ConnectivityChecker(private val context: Context) {
             val network = connectivityManager.activeNetwork
             val networkCapabilities = connectivityManager.getNetworkCapabilities(network)
             networkCapabilities != null && networkCapabilities.hasCapability(
-                NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                NetworkCapabilities.NET_CAPABILITY_INTERNET
+            )
         } else {
             val networkInfo = connectivityManager.activeNetworkInfo
             networkInfo != null && networkInfo.isConnected
@@ -43,11 +44,15 @@ class ConnectivityChecker(private val context: Context) {
             }
         }
 
-        connectivityManager.registerNetworkCallback(networkRequest, networkCallback!!)
+        networkCallback?.let {
+            connectivityManager.registerNetworkCallback(networkRequest, it)
+        }
     }
 
     fun unregisterNetworkCallback() {
-        connectivityManager.unregisterNetworkCallback(networkCallback!!)
+        networkCallback?.let {
+            connectivityManager.unregisterNetworkCallback(it)
+        }
         networkCallback = null
     }
 }

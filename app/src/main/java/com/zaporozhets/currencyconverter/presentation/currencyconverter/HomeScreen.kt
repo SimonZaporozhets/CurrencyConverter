@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -21,45 +22,34 @@ import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.zaporozhets.currencyconverter.R
-import com.zaporozhets.currencyconverter.domain.model.ConversionResult
+import com.zaporozhets.currencyconverter.domain.model.UiState
 import com.zaporozhets.currencyconverter.presentation.currencyconverter.components.DropdownMenuCurrencySelector
 
 
 @Composable
-fun CurrencyConverterScreen(currencyViewModel: CurrencyConverterViewModel = hiltViewModel()) {
+fun HomeScreen(
+    state: HomeState,
+    onEvent: (HomeEvent) -> Unit,
+) {
     Scaffold(topBar = {
         TopAppBar(title = { Text(text = "Currency Converter") })
     }, content = { paddingValues ->
-        Box(modifier = Modifier.padding(paddingValues)) {
+        Box(
+            modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxWidth()
+                .fillMaxHeight()
+        ) {
 
-            val conversionResult by currencyViewModel.conversionResult
-            val currencies = currencyViewModel.currenciesList
-            val amount = remember { mutableStateOf("") }
-            val amountError = remember { mutableStateOf<String?>(null) }
-            val baseCurrency = remember { mutableStateOf("USD") }
-            val targetCurrency = remember { mutableStateOf("EUR") }
-
-            fun convertCurrency() {
-                val amountValue = amount.value.toDoubleOrNull()
-                if (amountValue != null && amountValue > 0) {
-                    currencyViewModel.convertCurrency(
-                        amountValue, baseCurrency.value, targetCurrency.value
-                    )
-                    amountError.value = null
-                } else {
-                    amountError.value = "Invalid Amount"
-                }
+            if (state.uiState.value == UiState.Loading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
 
             Column {
@@ -78,20 +68,20 @@ fun CurrencyConverterScreen(currencyViewModel: CurrencyConverterViewModel = hilt
                     ) {
 
                         OutlinedTextField(
-                            value = amount.value,
+                            value = state.amountToConvert.value,
                             onValueChange = {
-                                amount.value = it
-                                amountError.value = null
+                                state.amountToConvert.value = it
+                                state.validationError.value = ""
                             },
                             label = { Text(stringResource(R.string.amount)) },
-                            isError = amountError.value != null
+                            isError = state.validationError.value.isNotBlank()
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        amountError.value?.let {
+                        if (state.validationError.value.isNotBlank()) {
                             Text(
-                                text = it,
+                                text = state.validationError.value,
                                 color = MaterialTheme.colors.error,
                                 style = MaterialTheme.typography.caption,
                             )
@@ -102,15 +92,15 @@ fun CurrencyConverterScreen(currencyViewModel: CurrencyConverterViewModel = hilt
                         Row {
 
                             DropdownMenuCurrencySelector(
-                                selectedCurrency = baseCurrency,
+                                selectedCurrency = state.baseCurrency,
                                 label = stringResource(R.string.base_currency),
-                                currencies
+                                state.currencies
                             )
                             Spacer(modifier = Modifier.width(16.dp))
                             DropdownMenuCurrencySelector(
-                                selectedCurrency = targetCurrency,
+                                selectedCurrency = state.targetCurrency,
                                 label = stringResource(R.string.target_currency),
-                                currencies
+                                state.currencies
                             )
 
                         }
@@ -123,7 +113,7 @@ fun CurrencyConverterScreen(currencyViewModel: CurrencyConverterViewModel = hilt
                 ) {
 
                     Button(
-                        onClick = { convertCurrency() },
+                        onClick = { onEvent(HomeEvent.ConvertCurrency) },
                         shape = RoundedCornerShape(10.dp),
                         border = BorderStroke(1.dp, Color.LightGray),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.LightGray)
@@ -134,8 +124,8 @@ fun CurrencyConverterScreen(currencyViewModel: CurrencyConverterViewModel = hilt
                     Spacer(modifier = Modifier.height(16.dp))
 
                     ConversionResultDisplay(
-                        conversionResult = conversionResult,
-                        onRetry = { convertCurrency() },
+                        uiState = state.uiState.value,
+                        onRetry = { onEvent(HomeEvent.ConvertCurrency) },
                     )
                 }
             }
@@ -147,7 +137,7 @@ fun CurrencyConverterScreen(currencyViewModel: CurrencyConverterViewModel = hilt
 
 @Composable
 fun ConversionResultDisplay(
-    conversionResult: ConversionResult,
+    uiState: UiState,
     onRetry: () -> Unit,
 ) {
 
@@ -163,10 +153,10 @@ fun ConversionResultDisplay(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            when (conversionResult) {
-                is ConversionResult.Error -> {
+            when (uiState) {
+                is UiState.Error -> {
                     Text(
-                        text = "Error: ${conversionResult.message}",
+                        text = "Error: ${uiState.message}",
                         textAlign = TextAlign.Center
                     )
                     Button(onClick = onRetry) {
@@ -174,23 +164,21 @@ fun ConversionResultDisplay(
                     }
                 }
 
-                ConversionResult.NoData -> {
+                UiState.NoData -> {
                     Text(
                         text = "No conversion data available. Please enter an amount and select currencies to convert.",
                         textAlign = TextAlign.Center
                     )
                 }
 
-                is ConversionResult.Success -> {
+                is UiState.ConversionSuccess -> {
                     Text(
-                        text = "Conversion result: ${conversionResult.value}",
+                        text = "Conversion result: ${uiState.value}",
                         textAlign = TextAlign.Center
                     )
                 }
 
-                ConversionResult.Loading -> {
-                    CircularProgressIndicator()
-                }
+                else -> {}
             }
         }
     }
