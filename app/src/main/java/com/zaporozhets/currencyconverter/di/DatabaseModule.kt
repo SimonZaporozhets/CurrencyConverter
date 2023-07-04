@@ -1,7 +1,6 @@
 package com.zaporozhets.currencyconverter.di
 
 import android.content.Context
-import androidx.room.Room
 import com.zaporozhets.currencyconverter.data.local.AppDatabase
 import com.zaporozhets.currencyconverter.data.local.dao.ConversionRatesDao
 import dagger.Module
@@ -19,13 +18,7 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
-        return Room.databaseBuilder(
-            context,
-            AppDatabase::class.java,
-            "app_database"
-        )
-            .fallbackToDestructiveMigration()
-            .build()
+        return AppDatabase.getInstance(context)
     }
 
     @Provides
