@@ -28,15 +28,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.zaporozhets.currencyconverter.R
 import com.zaporozhets.currencyconverter.domain.model.UiState
-import com.zaporozhets.currencyconverter.presentation.currencyconverter.components.DropdownMenuCurrencySelector
 
 
 @Composable
 fun HomeScreen(
     state: HomeState,
     onEvent: (HomeEvent) -> Unit,
+    navController: NavController
 ) {
     Scaffold(topBar = {
         TopAppBar(title = { Text(text = "Currency Converter") })
@@ -69,9 +70,8 @@ fun HomeScreen(
 
                         OutlinedTextField(
                             value = state.amountToConvert.value,
-                            onValueChange = {
-                                state.amountToConvert.value = it
-                                state.validationError.value = ""
+                            onValueChange = { newAmount ->
+                                onEvent(HomeEvent.ChangeAmount(newAmount))
                             },
                             label = { Text(stringResource(R.string.amount)) },
                             isError = state.validationError.value.isNotBlank()
@@ -91,17 +91,23 @@ fun HomeScreen(
 
                         Row {
 
-                            DropdownMenuCurrencySelector(
-                                selectedCurrency = state.baseCurrency,
-                                label = stringResource(R.string.base_currency),
-                                state.currencies
-                            )
+                            Button(
+                                onClick = { navController.navigate("currencySelection") },
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, Color.LightGray),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.LightGray)
+                            ) {
+                                Text(stringResource(R.string.base_currency))
+                            }
                             Spacer(modifier = Modifier.width(16.dp))
-                            DropdownMenuCurrencySelector(
-                                selectedCurrency = state.targetCurrency,
-                                label = stringResource(R.string.target_currency),
-                                state.currencies
-                            )
+                            Button(
+                                onClick = { navController.navigate("currencySelection") },
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, Color.LightGray),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.LightGray)
+                            ) {
+                                Text(stringResource(R.string.target_currency))
+                            }
 
                         }
                     }

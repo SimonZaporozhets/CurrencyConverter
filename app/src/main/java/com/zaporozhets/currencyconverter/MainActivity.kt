@@ -14,6 +14,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.zaporozhets.currencyconverter.presentation.currencyconverter.HomeScreen
 import com.zaporozhets.currencyconverter.presentation.currencyconverter.HomeViewModel
+import com.zaporozhets.currencyconverter.presentation.currencyselection.CurrencySelectionScreen
+import com.zaporozhets.currencyconverter.presentation.currencyselection.CurrencySelectionViewModel
 import com.zaporozhets.currencyconverter.presentation.ui.theme.CurrencyConverterTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -36,7 +38,16 @@ class MainActivity : ComponentActivity() {
                             val viewModel = hiltViewModel<HomeViewModel>()
                             HomeScreen(
                                 state = viewModel.state.collectAsState().value,
-                                onEvent = viewModel::onEvent
+                                onEvent = viewModel::onEvent,
+                                navController
+                            )
+                        }
+                        composable(route = "currencySelection") {
+                            val viewModel = hiltViewModel<CurrencySelectionViewModel>()
+                            CurrencySelectionScreen(
+                                state = viewModel.state.collectAsState().value,
+                                onEvent = viewModel::onEvent,
+                                navController = navController
                             )
                         }
                     }

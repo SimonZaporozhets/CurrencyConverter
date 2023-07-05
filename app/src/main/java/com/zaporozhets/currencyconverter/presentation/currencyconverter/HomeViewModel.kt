@@ -90,6 +90,10 @@ class HomeViewModel @Inject constructor(
             is HomeEvent.ConvertCurrency -> {
                 convertCurrency()
             }
+            is HomeEvent.ChangeAmount -> {
+                state.value.amountToConvert.value = event.amount
+                state.value.validationError.value = ""
+            }
         }
     }
 
