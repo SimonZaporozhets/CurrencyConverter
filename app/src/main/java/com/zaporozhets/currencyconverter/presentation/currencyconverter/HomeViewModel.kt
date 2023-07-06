@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.zaporozhets.currencyconverter.domain.model.ConvertCurrencyParams
 import com.zaporozhets.currencyconverter.domain.model.UiState
 import com.zaporozhets.currencyconverter.domain.usecase.ConvertCurrencyUseCase
-import com.zaporozhets.currencyconverter.domain.usecase.GetAllCurrenciesUseCase
 import com.zaporozhets.currencyconverter.utils.ConnectivityChecker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -22,7 +21,6 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val convertCurrencyUseCase: ConvertCurrencyUseCase,
-    private val getAllCurrenciesUseCase: GetAllCurrenciesUseCase,
     private val connectivityChecker: ConnectivityChecker,
 ) : ViewModel() {
 
@@ -50,16 +48,6 @@ class HomeViewModel @Inject constructor(
             connectivityChecker.registerNetworkCallback { isOnline ->
                 _isOnline.value = isOnline
             }
-        }
-        getAllCurrencies()
-    }
-
-    private fun getAllCurrencies() {
-        viewModelScope.launch(exceptionHandler) {
-            state.value.uiState.value = UiState.Loading
-            state.value.currencies.clear()
-            state.value.currencies.addAll(getAllCurrenciesUseCase.execute(Unit))
-            state.value.uiState.value = UiState.NoData
         }
     }
 
@@ -90,10 +78,14 @@ class HomeViewModel @Inject constructor(
             is HomeEvent.ConvertCurrency -> {
                 convertCurrency()
             }
+
             is HomeEvent.ChangeAmount -> {
                 state.value.amountToConvert.value = event.amount
                 state.value.validationError.value = ""
             }
+
+            is HomeEvent.UpdateBaseCurrency -> state.value.baseCurrency.value = event.currency
+            is HomeEvent.UpdateTargetCurrency -> state.value.targetCurrency.value = event.currency
         }
     }
 

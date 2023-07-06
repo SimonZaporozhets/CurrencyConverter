@@ -31,13 +31,16 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.zaporozhets.currencyconverter.R
 import com.zaporozhets.currencyconverter.domain.model.UiState
+import com.zaporozhets.currencyconverter.utils.Screen
 
 
 @Composable
 fun HomeScreen(
     state: HomeState,
     onEvent: (HomeEvent) -> Unit,
-    navController: NavController
+    navController: NavController,
+    selectedCurrency: String,
+    currencyFor: String,
 ) {
     Scaffold(topBar = {
         TopAppBar(title = { Text(text = "Currency Converter") })
@@ -48,6 +51,13 @@ fun HomeScreen(
                 .fillMaxWidth()
                 .fillMaxHeight()
         ) {
+
+            if (selectedCurrency.isNotBlank() && currencyFor.isNotBlank()) {
+                when (currencyFor) {
+                    "base" -> onEvent(HomeEvent.UpdateBaseCurrency(selectedCurrency))
+                    "target" -> onEvent(HomeEvent.UpdateTargetCurrency(selectedCurrency))
+                }
+            }
 
             if (state.uiState.value == UiState.Loading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -92,21 +102,33 @@ fun HomeScreen(
                         Row {
 
                             Button(
-                                onClick = { navController.navigate("currencySelection") },
+                                onClick = {
+                                    navController.navigate(
+                                        Screen.CurrencySelectionScreen.withArgs(
+                                            "base"
+                                        )
+                                    )
+                                },
                                 shape = RoundedCornerShape(10.dp),
                                 border = BorderStroke(1.dp, Color.LightGray),
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.LightGray)
                             ) {
-                                Text(stringResource(R.string.base_currency))
+                                Text(state.baseCurrency.value)
                             }
                             Spacer(modifier = Modifier.width(16.dp))
                             Button(
-                                onClick = { navController.navigate("currencySelection") },
+                                onClick = {
+                                    navController.navigate(
+                                        Screen.CurrencySelectionScreen.withArgs(
+                                            "target"
+                                        )
+                                    )
+                                },
                                 shape = RoundedCornerShape(10.dp),
                                 border = BorderStroke(1.dp, Color.LightGray),
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.LightGray)
                             ) {
-                                Text(stringResource(R.string.target_currency))
+                                Text(state.targetCurrency.value)
                             }
 
                         }

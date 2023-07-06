@@ -5,6 +5,7 @@ import com.zaporozhets.currencyconverter.data.local.entities.CurrencyRate
 import com.zaporozhets.currencyconverter.data.local.entities.CurrencySymbol
 import com.zaporozhets.currencyconverter.data.local.entities.LatestCurrencyRates
 import com.zaporozhets.currencyconverter.data.remote.api.ExchangeRatesApi
+import com.zaporozhets.currencyconverter.domain.model.Currency
 import com.zaporozhets.currencyconverter.domain.model.CurrencyConversionRates
 
 class CurrencyRepositoryImpl(
@@ -63,10 +64,10 @@ class CurrencyRepositoryImpl(
         }
     }
 
-    override suspend fun getAllCurrencies(): List<String> {
+    override suspend fun getAllCurrencies(): List<Currency> {
         val cachedSymbols = conversionRateDao.getAllCurrencies()
         return if (!cachedSymbols.isNullOrEmpty() && !isStale(cachedSymbols[0].timestamp)) {
-            cachedSymbols.map { it.symbol }
+            cachedSymbols.map { Currency(it.symbol, it.currencyName) }
         } else {
             try {
                 val symbolsFromApi = exchangeRatesApi.getAllCurrencies()
@@ -74,10 +75,10 @@ class CurrencyRepositoryImpl(
                     CurrencySymbol(it.key, it.value, System.currentTimeMillis())
                 }
                 conversionRateDao.insertAllCurrencies(symbols)
-                symbolsFromApi.symbols.keys.toList()
+                symbolsFromApi.symbols.map { Currency(it.key, it.value) }
             } catch (e: Exception) {
                 if (!cachedSymbols.isNullOrEmpty()) {
-                    cachedSymbols.map { it.symbol }
+                    cachedSymbols.map { Currency(it.symbol, it.currencyName) }
                 } else {
                     throw e
                 }
