@@ -31,7 +31,9 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.zaporozhets.currencyconverter.R
 import com.zaporozhets.currencyconverter.domain.model.UiState
+import com.zaporozhets.currencyconverter.utils.BASE_CURRENCY
 import com.zaporozhets.currencyconverter.utils.Screen
+import com.zaporozhets.currencyconverter.utils.TARGET_CURRENCY
 
 
 @Composable
@@ -43,7 +45,7 @@ fun HomeScreen(
     currencyFor: String,
 ) {
     Scaffold(topBar = {
-        TopAppBar(title = { Text(text = "Currency Converter") })
+        TopAppBar(title = { Text(text = stringResource(id = R.string.app_name)) })
     }, content = { paddingValues ->
         Box(
             modifier = Modifier
@@ -54,8 +56,8 @@ fun HomeScreen(
 
             if (selectedCurrency.isNotBlank() && currencyFor.isNotBlank()) {
                 when (currencyFor) {
-                    "base" -> onEvent(HomeEvent.UpdateBaseCurrency(selectedCurrency))
-                    "target" -> onEvent(HomeEvent.UpdateTargetCurrency(selectedCurrency))
+                    BASE_CURRENCY -> onEvent(HomeEvent.UpdateBaseCurrency(selectedCurrency))
+                    TARGET_CURRENCY -> onEvent(HomeEvent.UpdateTargetCurrency(selectedCurrency))
                 }
             }
 
@@ -105,7 +107,7 @@ fun HomeScreen(
                                 onClick = {
                                     navController.navigate(
                                         Screen.CurrencySelectionScreen.withArgs(
-                                            "base"
+                                            BASE_CURRENCY
                                         )
                                     )
                                 },
@@ -120,7 +122,7 @@ fun HomeScreen(
                                 onClick = {
                                     navController.navigate(
                                         Screen.CurrencySelectionScreen.withArgs(
-                                            "target"
+                                            TARGET_CURRENCY
                                         )
                                     )
                                 },
@@ -184,28 +186,25 @@ fun ConversionResultDisplay(
             when (uiState) {
                 is UiState.Error -> {
                     Text(
-                        text = "Error: ${uiState.message}",
+                        text = stringResource(id = R.string.error, uiState.message),
                         textAlign = TextAlign.Center
                     )
                     Button(onClick = onRetry) {
-                        Text(text = "Retry")
+                        Text(text = stringResource(id = R.string.retry))
                     }
                 }
-
                 UiState.NoData -> {
                     Text(
-                        text = "No conversion data available. Please enter an amount and select currencies to convert.",
+                        text = stringResource(id = R.string.no_data_available),
                         textAlign = TextAlign.Center
                     )
                 }
-
                 is UiState.ConversionSuccess -> {
                     Text(
-                        text = "Conversion result: ${uiState.value}",
+                        text = stringResource(id = R.string.conversion_result, uiState.value),
                         textAlign = TextAlign.Center
                     )
                 }
-
                 else -> {}
             }
         }

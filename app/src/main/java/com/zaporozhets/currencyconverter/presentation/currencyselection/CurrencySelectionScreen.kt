@@ -28,13 +28,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.zaporozhets.currencyconverter.R
 import com.zaporozhets.currencyconverter.domain.model.Currency
 import com.zaporozhets.currencyconverter.domain.model.UiState
 import com.zaporozhets.currencyconverter.presentation.ui.theme.CurrencyConverterTheme
+import com.zaporozhets.currencyconverter.utils.CURRENCY_FOR_KEY
+import com.zaporozhets.currencyconverter.utils.CURRENCY_NAME_KEY
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 
@@ -52,15 +56,15 @@ fun CurrencySelectionScreen(
     LaunchedEffect(context) {
         navigationEvent.collect { currencyName ->
             navController.previousBackStackEntry?.savedStateHandle?.apply {
-                set("currency_name", currencyName)
-                set("currency_for", currencyFor)
+                set(CURRENCY_NAME_KEY, currencyName)
+                set(CURRENCY_FOR_KEY, currencyFor)
             }
             navController.popBackStack()
         }
     }
 
     Scaffold(topBar = {
-        TopAppBar(title = { Text(text = "Currency Converter") })
+        TopAppBar(title = { Text(text = stringResource(id = R.string.app_name)) })
     }, content = { paddingValues ->
         Box(
             modifier = Modifier

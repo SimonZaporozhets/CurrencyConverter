@@ -8,7 +8,7 @@ import com.zaporozhets.currencyconverter.domain.model.Currency
 import com.zaporozhets.currencyconverter.domain.model.UiState
 
 data class CurrencySelectionState(
-    var uiState: MutableState<UiState> = mutableStateOf(UiState.NoData),
+    val uiState: MutableState<UiState> = mutableStateOf(UiState.NoData),
     val searchQuery: MutableState<String> = mutableStateOf(""),
     val currencies: SnapshotStateList<Currency> = mutableStateListOf(),
 )
