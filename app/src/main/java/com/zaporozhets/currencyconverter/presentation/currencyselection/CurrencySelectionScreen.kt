@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
@@ -26,7 +25,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -37,6 +35,7 @@ import androidx.navigation.compose.rememberNavController
 import com.zaporozhets.currencyconverter.R
 import com.zaporozhets.currencyconverter.domain.model.Currency
 import com.zaporozhets.currencyconverter.domain.model.UiState
+import com.zaporozhets.currencyconverter.presentation.currencyselection.components.ShimmerCurrencyItem
 import com.zaporozhets.currencyconverter.presentation.ui.theme.CurrencyConverterTheme
 import com.zaporozhets.currencyconverter.utils.CURRENCY_FOR_KEY
 import com.zaporozhets.currencyconverter.utils.CURRENCY_NAME_KEY
@@ -78,28 +77,30 @@ fun CurrencySelectionScreen(
                 .fillMaxWidth()
                 .fillMaxHeight()
         ) {
-            if (state.uiState.value == UiState.Loading || isSearching) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else {
 
-                Column(
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+            ) {
+                TextField(
+                    value = searchQuery,
+                    onValueChange = { newValue ->
+                        onEvent(CurrencySelectionEvent.SearchQueryChanged(newValue))
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(text = stringResource(R.string.search)) }
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                LazyColumn(
                     modifier = Modifier
-                        .padding(16.dp)
+                        .fillMaxHeight()
+                        .fillMaxWidth()
                 ) {
-                    TextField(
-                        value = searchQuery,
-                        onValueChange = { newValue ->
-                            onEvent(CurrencySelectionEvent.SearchQueryChanged(newValue))
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text(text = stringResource(R.string.search)) }
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .fillMaxWidth()
-                    ) {
+                    if (state.uiState.value == UiState.Loading || isSearching) {
+                        items(20) {
+                            ShimmerCurrencyItem()
+                        }
+                    } else {
                         items(currencies) { currency ->
                             Row(
                                 modifier = Modifier
@@ -137,6 +138,7 @@ fun CurrencySelectionScreen(
                 }
             }
         }
+
     })
 }
 

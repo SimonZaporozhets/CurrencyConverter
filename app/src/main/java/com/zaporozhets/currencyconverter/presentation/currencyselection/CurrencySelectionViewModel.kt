@@ -53,7 +53,6 @@ class CurrencySelectionViewModel @Inject constructor(
     private fun getAllCurrencies() {
         viewModelScope.launch(exceptionHandler) {
             state.value.uiState.value = UiState.Loading
-
             allCurrencies = getAllCurrenciesUseCase.execute(Unit)
             state.value.currencies.value = allCurrencies
             state.value.uiState.value = UiState.NoData
