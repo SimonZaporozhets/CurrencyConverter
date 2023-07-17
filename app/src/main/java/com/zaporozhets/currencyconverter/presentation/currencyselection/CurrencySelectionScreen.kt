@@ -21,13 +21,14 @@ import androidx.compose.material.TextField
 import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -40,6 +41,7 @@ import com.zaporozhets.currencyconverter.presentation.ui.theme.CurrencyConverter
 import com.zaporozhets.currencyconverter.utils.CURRENCY_FOR_KEY
 import com.zaporozhets.currencyconverter.utils.CURRENCY_NAME_KEY
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 
 @Composable
@@ -51,9 +53,13 @@ fun CurrencySelectionScreen(
     currencyFor: String,
 ) {
 
-    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(context) {
+    val searchQuery by state.searchQuery.collectAsState()
+    val currencies by state.currencies.collectAsState()
+    val isSearching by state.isSearching.collectAsState()
+
+    LaunchedEffect(coroutineScope) {
         navigationEvent.collect { currencyName ->
             navController.previousBackStackEntry?.savedStateHandle?.apply {
                 set(CURRENCY_NAME_KEY, currencyName)
@@ -72,64 +78,64 @@ fun CurrencySelectionScreen(
                 .fillMaxWidth()
                 .fillMaxHeight()
         ) {
-
-            if (state.uiState.value == UiState.Loading) {
+            if (state.uiState.value == UiState.Loading || isSearching) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            }
+            } else {
 
-            Column(
-                modifier = Modifier
-                    .padding(16.dp)
-            ) {
-                TextField(
-                    value = state.searchQuery.value,
-                    onValueChange = { newValue ->
-                        onEvent(CurrencySelectionEvent.SearchQueryChanged(newValue))
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                LazyColumn(
+                Column(
                     modifier = Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth()
+                        .padding(16.dp)
                 ) {
-                    items(state.currencies) { currency ->
-                        Row(
-                            modifier = Modifier
-                                .padding(vertical = 8.dp)
-                                .background(
-                                    color = Color.DarkGray,
-                                    shape = RoundedCornerShape(14.dp)
-                                )
-                                .clickable {
-                                    onEvent(
-                                        CurrencySelectionEvent.CurrencySelected(
-                                            currency.symbol,
-                                            currencyFor,
-                                        ),
+                    TextField(
+                        value = searchQuery,
+                        onValueChange = { newValue ->
+                            onEvent(CurrencySelectionEvent.SearchQueryChanged(newValue))
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text(text = stringResource(R.string.search)) }
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth()
+                    ) {
+                        items(currencies) { currency ->
+                            Row(
+                                modifier = Modifier
+                                    .padding(vertical = 8.dp)
+                                    .background(
+                                        color = Color.DarkGray,
+                                        shape = RoundedCornerShape(14.dp)
                                     )
-                                }
-                                .padding(8.dp)
-                                .fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
+                                    .clickable {
+                                        onEvent(
+                                            CurrencySelectionEvent.CurrencySelected(
+                                                currency.symbol,
+                                                currencyFor,
+                                            ),
+                                        )
+                                    }
+                                    .padding(8.dp)
+                                    .fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
 
-                            Text(
-                                text = currency.symbol,
-                                modifier = Modifier
-                            )
+                                Text(
+                                    text = currency.symbol,
+                                    modifier = Modifier
+                                )
 
-                            Text(
-                                text = currency.name,
-                                modifier = Modifier
-                            )
+                                Text(
+                                    text = currency.name,
+                                    modifier = Modifier
+                                )
 
+                            }
                         }
                     }
                 }
             }
-
         }
     })
 }
@@ -164,8 +170,8 @@ fun CurrencySelectionScreenPreview() {
 
         val mockState = remember {
             CurrencySelectionState(
-                searchQuery = mutableStateOf("USD"),
-                currencies = mutableStateListOf(*currenciesList.toTypedArray()),
+                searchQuery = MutableStateFlow("USD"),
+                currencies = MutableStateFlow(currenciesList),
                 uiState = mutableStateOf(UiState.NoData)
             )
         }
