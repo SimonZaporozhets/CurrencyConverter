@@ -1,10 +1,9 @@
 package com.zaporozhets.currencyconverter.di
 
 import com.zaporozhets.currencyconverter.BuildConfig
-import com.zaporozhets.currencyconverter.data.local.dao.ConversionRatesDao
 import com.zaporozhets.currencyconverter.data.remote.api.ExchangeRatesApi
-import com.zaporozhets.currencyconverter.data.repository.CurrencyRepository
-import com.zaporozhets.currencyconverter.data.repository.CurrencyRepositoryImpl
+import com.zaporozhets.currencyconverter.utils.API_BASE_URL
+import com.zaporozhets.currencyconverter.utils.API_HEADER_KEY_NAME
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -20,8 +19,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-
-    private const val API_BASE_URL = "https://api.apilayer.com/exchangerates_data/"
 
     @Singleton
     @Provides
@@ -44,8 +41,8 @@ object NetworkModule {
         httpLoggingInterceptor: HttpLoggingInterceptor,
     ): OkHttpClient {
         return OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)  // connect timeout
-            .readTimeout(30, TimeUnit.SECONDS)     // socket timeout
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
             .addInterceptor(apiKeyInterceptor)
             .addInterceptor(httpLoggingInterceptor)
             .build()
@@ -57,7 +54,10 @@ object NetworkModule {
         return Interceptor { chain ->
             val originalRequest = chain.request()
             val newRequest = originalRequest.newBuilder()
-                .header("apikey", BuildConfig.API_KEY)  // replace <Your Api Key> with your actual API key
+                .header(
+                    API_HEADER_KEY_NAME,
+                    BuildConfig.API_KEY
+                )
                 .build()
             chain.proceed(newRequest)
         }
@@ -75,12 +75,4 @@ object NetworkModule {
     @Provides
     fun provideGsonConverterFactory(): GsonConverterFactory = GsonConverterFactory.create()
 
-    @Singleton
-    @Provides
-    fun provideCurrencyRepository(
-        exchangeRatesApi: ExchangeRatesApi,
-        conversionRatesDao: ConversionRatesDao,
-    ): CurrencyRepository {
-        return CurrencyRepositoryImpl(exchangeRatesApi, conversionRatesDao)
-    }
 }

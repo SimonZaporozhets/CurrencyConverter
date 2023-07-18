@@ -2,19 +2,19 @@ package com.zaporozhets.currencyconverter.presentation.currencyselection
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.zaporozhets.currencyconverter.data.repository.ErrorMessageRepository
+import com.zaporozhets.currencyconverter.domain.Result
 import com.zaporozhets.currencyconverter.domain.model.Currency
-import com.zaporozhets.currencyconverter.domain.model.UiState
-import com.zaporozhets.currencyconverter.domain.usecase.GetAllCurrenciesUseCase
+import com.zaporozhets.currencyconverter.domain.usecases.GetAllCurrenciesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
@@ -23,6 +23,7 @@ import javax.inject.Inject
 @HiltViewModel
 class CurrencySelectionViewModel @Inject constructor(
     private val getAllCurrenciesUseCase: GetAllCurrenciesUseCase,
+    private val errorMessageRepository: ErrorMessageRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CurrencySelectionState())
@@ -36,11 +37,13 @@ class CurrencySelectionViewModel @Inject constructor(
     private val exceptionHandler = CoroutineExceptionHandler { _, exception ->
         state.value.uiState.value = when (exception) {
             is SocketTimeoutException, is UnknownHostException -> {
-                UiState.Error("Network error occurred")
+                CurrencySelectionUiState.Error(errorMessageRepository.getNetworkErrorOccurredMessage())
             }
 
             else -> {
-                UiState.Error(exception.message ?: "Unknown error")
+                CurrencySelectionUiState.Error(
+                    exception.message ?: errorMessageRepository.getUnknownError()
+                )
             }
         }
     }
@@ -51,18 +54,26 @@ class CurrencySelectionViewModel @Inject constructor(
     }
 
     private fun getAllCurrencies() {
-        viewModelScope.launch(exceptionHandler) {
-            state.value.uiState.value = UiState.Loading
-            allCurrencies = getAllCurrenciesUseCase.execute(Unit)
-            state.value.currencies.value = allCurrencies
-            state.value.uiState.value = UiState.NoData
+        state.value.uiState.value = CurrencySelectionUiState.Loading
+        viewModelScope.launch(exceptionHandler + Dispatchers.IO) {
+            when (val allCurrenciesResult = getAllCurrenciesUseCase.execute(Unit)) {
+                is Result.Error -> {
+                    state.value.uiState.value =
+                        CurrencySelectionUiState.Error(allCurrenciesResult.message)
+                }
+
+                is Result.Success -> {
+                    allCurrencies = allCurrenciesResult.value
+                    state.value.currencies.value = allCurrencies
+                    state.value.uiState.value = CurrencySelectionUiState.Success(allCurrencies)
+                }
+            }
         }
     }
 
     private fun filterCurrencies() {
         viewModelScope.launch(exceptionHandler) {
             state.value.searchQuery
-                .onEach { state.value.isSearching.update { true } }
                 .combine(state.value.currencies) { query, _ ->
                     if (query.isBlank()) {
                         allCurrencies
@@ -72,7 +83,6 @@ class CurrencySelectionViewModel @Inject constructor(
                         }
                     }
                 }
-                .onEach { state.value.isSearching.update { false } }
                 .collectLatest { filteredCurrencies ->
                     state.value.currencies.value = filteredCurrencies
                 }

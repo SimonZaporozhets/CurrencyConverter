@@ -1,14 +1,27 @@
 <resources>
+    <!-- App related strings -->
     <string name="app_name">Currency Converter</string>
 
+    <!-- UI related strings -->
     <string name="amount">Amount</string>
     <string name="base_currency">Base currency</string>
     <string name="target_currency">Target currency</string>
     <string name="convert">Convert</string>
-    <string name="conversion_result">Converted amount will be displayed here %f</string>
+    <string name="conversion_result">Converted amount will be displayed here %.2f</string>
     <string name="error">Error: %1$s</string>
     <string name="retry">Retry</string>
-    <string name="no_data_available">No conversion data available. Please enter an amount and select currencies to convert.</string>
+    <string name="no_conversion_data_available">No conversion data available. Please enter an amount and select currencies to convert.</string>
     <string name="search">Search</string>
+
+    <!-- Error messages -->
+    <string name="amount_cannot_be_blank">Amount cannot be blank</string>
+    <string name="invalid_amount">Amount should be a positive integer</string>
+    <string name="amount_should_be_positive">Amount should be greater than 0</string>
+    <string name="unknown_error">Unknown error</string>
+    <string name="network_error_occurred">Network error occurred</string>
+    <string name="amount_too_large">Amount cannot be larger than 1000000</string>
+
+    <!-- Other -->
+    <string name="no_currencies_data_available">No data available</string>
 
 </resources>

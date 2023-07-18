@@ -22,15 +22,19 @@ import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.zaporozhets.currencyconverter.R
-import com.zaporozhets.currencyconverter.domain.model.UiState
+import com.zaporozhets.currencyconverter.presentation.currencyconverter.components.ConversionResultDisplay
+import com.zaporozhets.currencyconverter.presentation.ui.theme.DarkTheme
 import com.zaporozhets.currencyconverter.utils.BASE_CURRENCY
 import com.zaporozhets.currencyconverter.utils.Screen
 import com.zaporozhets.currencyconverter.utils.TARGET_CURRENCY
@@ -61,7 +65,7 @@ fun HomeScreen(
                 }
             }
 
-            if (state.uiState.value == UiState.Loading) {
+            if (state.uiState.value == HomeUiState.Loading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
 
@@ -154,7 +158,7 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     ConversionResultDisplay(
-                        uiState = state.uiState.value,
+                        homeUiState = state.uiState.value,
                         onRetry = { onEvent(HomeEvent.ConvertCurrency) },
                     )
                 }
@@ -165,48 +169,31 @@ fun HomeScreen(
 
 }
 
+@Preview(showBackground = true)
 @Composable
-fun ConversionResultDisplay(
-    uiState: UiState,
-    onRetry: () -> Unit,
-) {
+fun PreviewHomeScreen() {
 
-    Card(
-        elevation = 6.dp,
-        backgroundColor = Color.LightGray,
-        shape = RoundedCornerShape(10.dp),
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            when (uiState) {
-                is UiState.Error -> {
-                    Text(
-                        text = stringResource(id = R.string.error, uiState.message),
-                        textAlign = TextAlign.Center
-                    )
-                    Button(onClick = onRetry) {
-                        Text(text = stringResource(id = R.string.retry))
-                    }
-                }
-                UiState.NoData -> {
-                    Text(
-                        text = stringResource(id = R.string.no_data_available),
-                        textAlign = TextAlign.Center
-                    )
-                }
-                is UiState.ConversionSuccess -> {
-                    Text(
-                        text = stringResource(id = R.string.conversion_result, uiState.value),
-                        textAlign = TextAlign.Center
-                    )
-                }
-                else -> {}
-            }
+    DarkTheme {
+        val navController = rememberNavController()
+        val state = remember {
+            mutableStateOf(
+                HomeState(
+                    amountToConvert = mutableStateOf("10"),
+                    baseCurrency = mutableStateOf("USD"),
+                    targetCurrency = mutableStateOf("EUR"),
+                    uiState = mutableStateOf(HomeUiState.NoData),
+                    validationError = mutableStateOf(""),
+                )
+            )
         }
+
+        HomeScreen(
+            state = state.value,
+            onEvent = { /*TODO handle event*/ },
+            navController = navController,
+            selectedCurrency = "EUR",
+            currencyFor = "USD"
+        )
     }
+
 }

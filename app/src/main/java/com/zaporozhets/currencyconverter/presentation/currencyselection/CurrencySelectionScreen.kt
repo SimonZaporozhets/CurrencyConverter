@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Card
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
@@ -25,16 +27,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.zaporozhets.currencyconverter.R
 import com.zaporozhets.currencyconverter.domain.model.Currency
-import com.zaporozhets.currencyconverter.domain.model.UiState
 import com.zaporozhets.currencyconverter.presentation.currencyselection.components.ShimmerCurrencyItem
 import com.zaporozhets.currencyconverter.presentation.ui.theme.CurrencyConverterTheme
 import com.zaporozhets.currencyconverter.utils.CURRENCY_FOR_KEY
@@ -53,10 +58,10 @@ fun CurrencySelectionScreen(
 ) {
 
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     val searchQuery by state.searchQuery.collectAsState()
     val currencies by state.currencies.collectAsState()
-    val isSearching by state.isSearching.collectAsState()
 
     LaunchedEffect(coroutineScope) {
         navigationEvent.collect { currencyName ->
@@ -96,42 +101,88 @@ fun CurrencySelectionScreen(
                         .fillMaxHeight()
                         .fillMaxWidth()
                 ) {
-                    if (state.uiState.value == UiState.Loading || isSearching) {
-                        items(20) {
-                            ShimmerCurrencyItem()
+                    when (val uiState = state.uiState.value) {
+                        is CurrencySelectionUiState.Loading, is CurrencySelectionUiState.Searching -> {
+                            items(20) {
+                                ShimmerCurrencyItem()
+                            }
                         }
-                    } else {
-                        items(currencies) { currency ->
-                            Row(
-                                modifier = Modifier
-                                    .padding(vertical = 8.dp)
-                                    .background(
-                                        color = Color.DarkGray,
-                                        shape = RoundedCornerShape(14.dp)
+
+                        is CurrencySelectionUiState.Error -> {
+                            item {
+                                Card(
+                                    backgroundColor = Color.LightGray,
+                                    shape = RoundedCornerShape(4.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp)
+                                        .wrapContentHeight(Alignment.CenterVertically)
+                                ) {
+                                    Text(
+                                        text = uiState.message,
+                                        color = Color.Red,
+                                        fontSize = 18.sp,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(16.dp)
                                     )
-                                    .clickable {
-                                        onEvent(
-                                            CurrencySelectionEvent.CurrencySelected(
-                                                currency.symbol,
-                                                currencyFor,
-                                            ),
+                                }
+                            }
+                        }
+
+                        is CurrencySelectionUiState.Success -> {
+                            items(currencies) { currency ->
+                                Row(
+                                    modifier = Modifier
+                                        .padding(vertical = 8.dp)
+                                        .background(
+                                            color = Color.DarkGray,
+                                            shape = RoundedCornerShape(14.dp)
                                         )
-                                    }
-                                    .padding(8.dp)
-                                    .fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
+                                        .clickable {
+                                            onEvent(
+                                                CurrencySelectionEvent.CurrencySelected(
+                                                    currency.symbol,
+                                                    currencyFor,
+                                                ),
+                                            )
+                                        }
+                                        .padding(8.dp)
+                                        .fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
 
-                                Text(
-                                    text = currency.symbol,
+                                    Text(
+                                        text = currency.symbol,
+                                        modifier = Modifier
+                                    )
+
+                                    Text(
+                                        text = currency.name,
+                                        modifier = Modifier
+                                    )
+
+                                }
+                            }
+                        }
+
+                        CurrencySelectionUiState.NoData -> {
+                            item {
+                                Card(
+                                    backgroundColor = Color.LightGray,
+                                    shape = RoundedCornerShape(4.dp),
                                     modifier = Modifier
-                                )
-
-                                Text(
-                                    text = currency.name,
-                                    modifier = Modifier
-                                )
-
+                                        .fillMaxWidth()
+                                        .padding(16.dp)
+                                        .wrapContentHeight(Alignment.CenterVertically)
+                                ) {
+                                    Text(
+                                        text = context.resources.getString(R.string.no_currencies_data_available),
+                                        color = Color.DarkGray,
+                                        fontSize = 18.sp,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(16.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -174,14 +225,13 @@ fun CurrencySelectionScreenPreview() {
             CurrencySelectionState(
                 searchQuery = MutableStateFlow("USD"),
                 currencies = MutableStateFlow(currenciesList),
-                uiState = mutableStateOf(UiState.NoData)
+                uiState = mutableStateOf(CurrencySelectionUiState.Success(currenciesList))
             )
         }
         val mockNavController = rememberNavController()
         val mockOnEvent: (CurrencySelectionEvent) -> Unit = {}
         val mockCurrencyFor = "base"
 
-        // Provide an empty shared flow for preview
         val mockNavigationEvent = remember { MutableSharedFlow<String>() }
 
         CurrencySelectionScreen(

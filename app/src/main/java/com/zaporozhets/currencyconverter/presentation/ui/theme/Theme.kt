@@ -45,3 +45,13 @@ fun CurrencyConverterTheme(
         content = content
     )
 }
+
+@Composable
+fun DarkTheme(content: @Composable () -> Unit) {
+    MaterialTheme(
+        colors = darkColors(),
+        typography = Typography,
+        shapes = Shapes,
+        content = content
+    )
+}
