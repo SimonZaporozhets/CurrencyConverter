@@ -22,24 +22,34 @@ import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.zaporozhets.currencyconverter.R
-import com.zaporozhets.currencyconverter.domain.model.UiState
-import com.zaporozhets.currencyconverter.presentation.currencyconverter.components.DropdownMenuCurrencySelector
+import com.zaporozhets.currencyconverter.presentation.currencyconverter.components.ConversionResultDisplay
+import com.zaporozhets.currencyconverter.presentation.ui.theme.DarkTheme
+import com.zaporozhets.currencyconverter.utils.BASE_CURRENCY
+import com.zaporozhets.currencyconverter.utils.Screen
+import com.zaporozhets.currencyconverter.utils.TARGET_CURRENCY
 
 
 @Composable
 fun HomeScreen(
     state: HomeState,
     onEvent: (HomeEvent) -> Unit,
+    navController: NavController,
+    selectedCurrency: String,
+    currencyFor: String,
 ) {
     Scaffold(topBar = {
-        TopAppBar(title = { Text(text = "Currency Converter") })
+        TopAppBar(title = { Text(text = stringResource(id = R.string.app_name)) })
     }, content = { paddingValues ->
         Box(
             modifier = Modifier
@@ -48,7 +58,14 @@ fun HomeScreen(
                 .fillMaxHeight()
         ) {
 
-            if (state.uiState.value == UiState.Loading) {
+            if (selectedCurrency.isNotBlank() && currencyFor.isNotBlank()) {
+                when (currencyFor) {
+                    BASE_CURRENCY -> onEvent(HomeEvent.UpdateBaseCurrency(selectedCurrency))
+                    TARGET_CURRENCY -> onEvent(HomeEvent.UpdateTargetCurrency(selectedCurrency))
+                }
+            }
+
+            if (state.uiState.value == HomeUiState.Loading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
 
@@ -69,9 +86,8 @@ fun HomeScreen(
 
                         OutlinedTextField(
                             value = state.amountToConvert.value,
-                            onValueChange = {
-                                state.amountToConvert.value = it
-                                state.validationError.value = ""
+                            onValueChange = { newAmount ->
+                                onEvent(HomeEvent.ChangeAmount(newAmount))
                             },
                             label = { Text(stringResource(R.string.amount)) },
                             isError = state.validationError.value.isNotBlank()
@@ -91,17 +107,35 @@ fun HomeScreen(
 
                         Row {
 
-                            DropdownMenuCurrencySelector(
-                                selectedCurrency = state.baseCurrency,
-                                label = stringResource(R.string.base_currency),
-                                state.currencies
-                            )
+                            Button(
+                                onClick = {
+                                    navController.navigate(
+                                        Screen.CurrencySelectionScreen.withArgs(
+                                            BASE_CURRENCY
+                                        )
+                                    )
+                                },
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, Color.LightGray),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.LightGray)
+                            ) {
+                                Text(state.baseCurrency.value)
+                            }
                             Spacer(modifier = Modifier.width(16.dp))
-                            DropdownMenuCurrencySelector(
-                                selectedCurrency = state.targetCurrency,
-                                label = stringResource(R.string.target_currency),
-                                state.currencies
-                            )
+                            Button(
+                                onClick = {
+                                    navController.navigate(
+                                        Screen.CurrencySelectionScreen.withArgs(
+                                            TARGET_CURRENCY
+                                        )
+                                    )
+                                },
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, Color.LightGray),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.LightGray)
+                            ) {
+                                Text(state.targetCurrency.value)
+                            }
 
                         }
                     }
@@ -124,7 +158,7 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     ConversionResultDisplay(
-                        uiState = state.uiState.value,
+                        homeUiState = state.uiState.value,
                         onRetry = { onEvent(HomeEvent.ConvertCurrency) },
                     )
                 }
@@ -135,51 +169,31 @@ fun HomeScreen(
 
 }
 
+@Preview(showBackground = true)
 @Composable
-fun ConversionResultDisplay(
-    uiState: UiState,
-    onRetry: () -> Unit,
-) {
+fun PreviewHomeScreen() {
 
-    Card(
-        elevation = 6.dp,
-        backgroundColor = Color.LightGray,
-        shape = RoundedCornerShape(10.dp),
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            when (uiState) {
-                is UiState.Error -> {
-                    Text(
-                        text = "Error: ${uiState.message}",
-                        textAlign = TextAlign.Center
-                    )
-                    Button(onClick = onRetry) {
-                        Text(text = "Retry")
-                    }
-                }
-
-                UiState.NoData -> {
-                    Text(
-                        text = "No conversion data available. Please enter an amount and select currencies to convert.",
-                        textAlign = TextAlign.Center
-                    )
-                }
-
-                is UiState.ConversionSuccess -> {
-                    Text(
-                        text = "Conversion result: ${uiState.value}",
-                        textAlign = TextAlign.Center
-                    )
-                }
-
-                else -> {}
-            }
+    DarkTheme {
+        val navController = rememberNavController()
+        val state = remember {
+            mutableStateOf(
+                HomeState(
+                    amountToConvert = mutableStateOf("10"),
+                    baseCurrency = mutableStateOf("USD"),
+                    targetCurrency = mutableStateOf("EUR"),
+                    uiState = mutableStateOf(HomeUiState.NoData),
+                    validationError = mutableStateOf(""),
+                )
+            )
         }
+
+        HomeScreen(
+            state = state.value,
+            onEvent = { /*TODO handle event*/ },
+            navController = navController,
+            selectedCurrency = "EUR",
+            currencyFor = "USD"
+        )
     }
+
 }

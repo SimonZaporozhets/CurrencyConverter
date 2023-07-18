@@ -2,9 +2,11 @@ package com.zaporozhets.currencyconverter.presentation.currencyconverter
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.zaporozhets.currencyconverter.domain.model.UiState
-import com.zaporozhets.currencyconverter.domain.usecase.ConvertCurrencyUseCase
-import com.zaporozhets.currencyconverter.domain.usecase.GetAllCurrenciesUseCase
+import com.zaporozhets.currencyconverter.data.repository.ErrorMessageRepository
+import com.zaporozhets.currencyconverter.domain.Result
+import com.zaporozhets.currencyconverter.domain.model.ConvertCurrencyParams
+import com.zaporozhets.currencyconverter.domain.usecases.ConvertCurrencyUseCase
+import com.zaporozhets.currencyconverter.domain.usecases.ValidationAmountUseCase
 import com.zaporozhets.currencyconverter.utils.ConnectivityChecker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -21,7 +23,8 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val convertCurrencyUseCase: ConvertCurrencyUseCase,
-    private val getAllCurrenciesUseCase: GetAllCurrenciesUseCase,
+    private val validationAmountUseCase: ValidationAmountUseCase,
+    private val errorMessageRepository: ErrorMessageRepository,
     private val connectivityChecker: ConnectivityChecker,
 ) : ViewModel() {
 
@@ -35,11 +38,13 @@ class HomeViewModel @Inject constructor(
     private val exceptionHandler = CoroutineExceptionHandler { _, exception ->
         state.value.uiState.value = when (exception) {
             is SocketTimeoutException, is UnknownHostException -> {
-                UiState.Error("Network error occurred")
+                HomeUiState.Error(errorMessageRepository.getNetworkErrorOccurredMessage())
             }
 
             else -> {
-                UiState.Error(exception.message ?: "Unknown error")
+                HomeUiState.Error(
+                    exception.message ?: errorMessageRepository.getUnknownError()
+                )
             }
         }
     }
@@ -50,35 +55,38 @@ class HomeViewModel @Inject constructor(
                 _isOnline.value = isOnline
             }
         }
-        getAllCurrencies()
-    }
-
-    private fun getAllCurrencies() {
-        viewModelScope.launch(exceptionHandler) {
-            state.value.uiState.value = UiState.Loading
-            state.value.currencies.clear()
-            state.value.currencies.addAll(getAllCurrenciesUseCase.execute())
-            state.value.uiState.value = UiState.NoData
-        }
     }
 
     private fun convertCurrency() {
         val amountValue = state.value.amountToConvert.value
-        if (amountValue.isNotBlank() && amountValue.toDouble() > 0) {
-            viewModelScope.launch(exceptionHandler) {
-                state.value.uiState.value = UiState.Loading
-                val result = withContext(Dispatchers.IO) {
-                    convertCurrencyUseCase.execute(
-                        state.value.baseCurrency.value,
-                        state.value.targetCurrency.value,
-                        amountValue.toDouble()
-                    )
+
+        viewModelScope.launch(exceptionHandler) {
+            when (val validationResult = validationAmountUseCase.execute(amountValue)) {
+                is Result.Error -> state.value.validationError.value =
+                    validationResult.message
+
+                is Result.Success -> {
+                    state.value.uiState.value = HomeUiState.Loading
+                    val conversionResult = withContext(Dispatchers.IO) {
+                        convertCurrencyUseCase.execute(
+                            ConvertCurrencyParams(
+                                state.value.baseCurrency.value,
+                                state.value.targetCurrency.value,
+                                validationResult.value
+                            )
+                        )
+                    }
+                    when (conversionResult) {
+                        is Result.Error -> state.value.uiState.value =
+                            HomeUiState.Error(conversionResult.message)
+
+                        is Result.Success -> state.value.uiState.value =
+                            HomeUiState.Success(conversionResult.value)
+
+                    }
                 }
-                state.value.uiState.value = UiState.ConversionSuccess(result)
+
             }
-            state.value.validationError.value = ""
-        } else {
-            state.value.validationError.value = "Invalid Amount"
         }
     }
 
@@ -87,6 +95,14 @@ class HomeViewModel @Inject constructor(
             is HomeEvent.ConvertCurrency -> {
                 convertCurrency()
             }
+
+            is HomeEvent.ChangeAmount -> {
+                state.value.amountToConvert.value = event.amount
+                state.value.validationError.value = ""
+            }
+
+            is HomeEvent.UpdateBaseCurrency -> state.value.baseCurrency.value = event.currency
+            is HomeEvent.UpdateTargetCurrency -> state.value.targetCurrency.value = event.currency
         }
     }
 
